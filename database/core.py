@@ -29,10 +29,10 @@ class AbstractDatabase:
     def __post_init__(self):
         connection_string: str = self._create_connection_string()
 
-        self.engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
+        self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
             connection_string, echo=self.echo, future=self.future, **self.engine_args)
 
-        self._session_factory = sessionmaker(self.engine)
+        self._session_factory = sessionmaker(self._engine)
 
     @property
     def session(self):
@@ -45,6 +45,14 @@ class AbstractDatabase:
     @property
     def base(self):
         return self.Base
+
+    @property
+    def engine(self):
+        return self._engine
+
+    @engine.setter
+    def engine(self, engine: sqlalchemy.engine.Engine):
+        self._engine = engine
 
     @property
     def connection_string(self):

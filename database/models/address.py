@@ -9,6 +9,9 @@ class Address(Base):
 
     id              = Column(Integer, Identity(start=0, cycle=True), primary_key=True)
     address         = Column(String, nullable=False)
+    
     user_id         = Column(Integer, ForeignKey("users.id"))
+    users = relationship("User", back_populates="addresses")
 
-    user = relationship("User", back_populates="addresses")
+    def __repr__(self):
+        return f"<Address(address='{self.address}')>"

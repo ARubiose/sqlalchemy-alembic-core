@@ -7,6 +7,14 @@ Alembic allows you to easily manage and apply changes to your database schema, s
 
 In this repository, you will find examples and instructions for setting up and using Alembic and SQLAlchemy in your own projects. We hope you find this codebase helpful in your development efforts!
 
+## Alembic commands
+  * `alembic upgrade head` - Migrate the database to the latest version.
+  * `alembic downgrade base` - Migrate the database to the base version.
+  * `alembic revision --autogenerate -m "message"` - Generate a new revision file.
+  * `alembic revision -m "message"` - Generate a new revision file without modifications.
+  * `alembic show` - Show the current revision for each database.
+  * `alembic history` - List changeset scripts in chronological order.
+  * `alembic current` - Display the current revision for each database.
 
 ## Author
 - **Name:** Álvaro Rubio Segovia

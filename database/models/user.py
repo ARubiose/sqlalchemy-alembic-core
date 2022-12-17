@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Identity
+from sqlalchemy import Column, Integer, String, Identity, ForeignKey
 from sqlalchemy.orm import relationship
 
 from database.models import Base
@@ -10,8 +10,12 @@ class User(Base):
     name        = Column(String)
     fullname    = Column(String)
     password    = Column(String)
+    phone       = Column(String)
 
-    addresses = relationship("Address", back_populates="user")
+    role_id     = Column(Integer, ForeignKey("roles.id"))
+    role = relationship("Role", back_populates="users")
+
+    addresses = relationship("Address", back_populates="users")
 
     def __repr__(self):
-        return f"<User(name='{self.name}', fullname='{self.fullname}', password='{self.password}')>"
+        return f"<User(name='{self.name}', fullname='{self.fullname}')>"
