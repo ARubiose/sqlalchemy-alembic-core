@@ -26,8 +26,14 @@ class AbstractDatabase:
     create_tables:  bool = True
     engine_args:    typing.Dict[str, typing.Any] = field(default_factory=dict)
 
-class SessionMixin:
-    """ Session factory mixin """
+    def __post_init__(self):
+        connection_string: str = self._create_connection_string()
+
+        self.engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
+            connection_string, echo=self.echo, future=self.future, **self.engine_args)
+
+        self._session_factory = sessionmaker(self.engine)
+
     @property
     def session(self):
         return self._session_factory()
@@ -36,42 +42,38 @@ class SessionMixin:
     def autocommit_session(self):
         return self._session_factory.begin()
 
+    @property
+    def base(self):
+        return self.Base
+
+    @property
+    def connection_string(self):
+        return self._create_connection_string()
+
 
 @dataclass(kw_only=True)
-class DeclarativeInterface(AbstractDatabase, SessionMixin):
+class DeclarativeInterface(AbstractDatabase):
     """ Declarative interface for database metadata """
     # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
     Base:       typing.Any
 
     def __post_init__(self):
-        connection_string: str = self._create_connection_string()
-        self.engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
-            connection_string, echo=self.echo, future=self.future, **self.engine_args)
-        self._session_factory = sessionmaker(self.engine)
+        super().__post_init__()
 
         if self.create_tables:
             self._create_tables()
-
-    @property
-    def base(self):
-        return self.Base
 
     def _create_tables(self):
         self.Base.metadata.create_all(self.engine)
 
 @dataclass(kw_only=True)
-class AutoMappedInterface(AbstractDatabase, SessionMixin):
+class AutoMappedInterface(AbstractDatabase):
     """ Automapped interface for database metadada """
 
     def __post_init__(self):
-        connection_string: str = self._create_connection_string()
-
-        self.engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
-            connection_string, echo=self.echo, future=self.future, **self.engine_args)
-
+        super().__post_init__()
         self._base_preparation()
 
-        self._session_factory = sessionmaker(self.engine)
 
     def _base_preparation(self):
         self.Base = automap_base()
