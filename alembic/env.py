@@ -61,12 +61,13 @@ def run_migrations_online() -> None:
 
     """
 
-    from database.config import declarative_database
-    connectable = declarative_database.engine
+    from database.config import database
+    connectable = database.engine
 
     with connectable.connect() as connection:
         context.configure(
-            connection=connection, target_metadata=target_metadata
+            connection=connection, 
+            target_metadata=target_metadata
         )
 
         with context.begin_transaction():

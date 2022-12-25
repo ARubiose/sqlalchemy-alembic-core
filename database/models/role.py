@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Identity
+from sqlalchemy import Column, String, BigInteger
 from sqlalchemy.orm import relationship
 
 from database.models import Base
@@ -6,9 +6,9 @@ from database.models import Base
 class Role(Base):
     __tablename__ = "roles"
 
-    id = Column(Integer, Identity(start=0, cycle=True), primary_key=True)
-    name = Column(String)
-    description = Column(String)
+    id = Column(BigInteger, primary_key=True)
+    name = Column(String(length=50), nullable=False)
+    description = Column(String(length=100))
 
     users = relationship("User", back_populates="role")
 

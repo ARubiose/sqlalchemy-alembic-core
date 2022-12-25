@@ -1,5 +1,6 @@
 """ Core module containing classes for Engine+Base combinations"""
 
+import abc
 import typing
 from dataclasses import dataclass, field
 
@@ -8,22 +9,22 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.automap import automap_base
 
 __all__ = [
-    'DeclarativeDatabase',
-    'DeclarativeLiteDatabase',
+    'Database',
+    'LiteDatabase',
     'AutoMappedDatabase',
-    'AutoMappedLiteDatabase'
+    'AutoMappedLiteDatabase',
 ]
 
 @dataclass(kw_only=True)
-class AbstractDatabase:
+class BaseDatabase(abc.ABC):
     """Base class representing minimal database connections for SQLALchemy"""
     dialect:    str
+    driver:     str 
     name:       str
     # Additional connection arguments
     driver:         str = None
     echo:           bool = False
     future:         bool = True
-    create_tables:  bool = True
     engine_args:    typing.Dict[str, typing.Any] = field(default_factory=dict)
 
     def __post_init__(self):
@@ -42,9 +43,6 @@ class AbstractDatabase:
     def autocommit_session(self):
         return self._session_factory.begin()
 
-    @property
-    def base(self):
-        return self.Base
 
     @property
     def engine(self):
@@ -55,53 +53,28 @@ class AbstractDatabase:
         self._engine = engine
 
     @property
+    @abc.abstractmethod
+    def base(self):
+        return self.Base
+
+    @property
     def connection_string(self):
         return self._create_connection_string()
 
+    @abc.abstractmethod
+    def _create_connection_string(self) -> str:
+        raise NotImplementedError
 
 @dataclass(kw_only=True)
-class DeclarativeInterface(AbstractDatabase):
-    """ Declarative interface for database metadata """
-    # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
-    Base:       typing.Any
-
-    def __post_init__(self):
-        super().__post_init__()
-
-        if self.create_tables:
-            self._create_tables()
-
-    def _create_tables(self):
-        self.Base.metadata.create_all(self.engine)
-
-@dataclass(kw_only=True)
-class AutoMappedInterface(AbstractDatabase):
-    """ Automapped interface for database metadada """
-
-    def __post_init__(self):
-        super().__post_init__()
-        self._base_preparation()
-
-
-    def _base_preparation(self):
-        self.Base = automap_base()
-        self.Base.metadata.reflect(bind=self.engine)
-        self.Base.prepare()
-
-    @property
-    def base(self):
-        return self.Base    
-
-@dataclass(kw_only=True)
-class LiteDatabaseInterface(AbstractDatabase):
+class LiteDatabaseMixin(BaseDatabase):
     """ Lite connection interface """
 
     def _create_connection_string(self) -> str:
         return f"{self.dialect}+{self.driver}:///{self.name}"
 
 @dataclass(kw_only=True)
-class DatabaseInterface(AbstractDatabase):
-    """ Complete connection interface """
+class AuthDatabaseMixin(BaseDatabase):
+    """ Complete connection interface with user, password, host and port """
     user:       str 
     password:   str 
     port:       int = None
@@ -116,20 +89,62 @@ class DatabaseInterface(AbstractDatabase):
 
         return f"{connection_string}/{self.name}"
 
+@dataclass(kw_only=True)
+class DeclarativeInterface:
+    """ Declarative interface for database metadata """
+    # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
+    Base:           typing.Any
+    create_tables:  bool = True
+
+    def __post_init__(self):
+        super().__post_init__()
+
+        if self.create_tables:
+            self._create_tables()
+
+    def _create_tables(self):
+        self.Base.metadata.create_all(self.engine)
+
+    @property
+    def base(self):
+        return self.Base
+
+@dataclass(kw_only=True)
+class AutoMappedInterface:
+    """ Automapped interface for database metadada """
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._base_preparation()
+
+
+    def _base_preparation(self):
+        self.Base = automap_base()
+        self.Base.metadata.reflect(bind=self.engine)
+        self.Base.prepare()
+
+    @property
+    def base(self):
+        return self.Base  
+
 # Module API
-class DeclarativeDatabase(DeclarativeInterface, DatabaseInterface):
+@dataclass(kw_only=True)
+class Database(DeclarativeInterface, AuthDatabaseMixin):
     """ Declarative database class for SQL databases"""
     pass
 
-class DeclarativeLiteDatabase(DeclarativeInterface, LiteDatabaseInterface):
+@dataclass(kw_only=True)
+class LiteDatabase(DeclarativeInterface, LiteDatabaseMixin):
     """ Declarative database class for SQLite database"""
     pass
 
-class AutoMappedDatabase(AutoMappedInterface, DatabaseInterface):
+@dataclass(kw_only=True)
+class AutoMappedDatabase(AutoMappedInterface, AuthDatabaseMixin):
     """ Automapped database class for SQL databases """
     pass
 
-class AutoMappedLiteDatabase(AutoMappedInterface, LiteDatabaseInterface):
+@dataclass(kw_only=True)
+class AutoMappedLiteDatabase(AutoMappedInterface, LiteDatabaseMixin):
     """ Automapped database class for SQLite database """
     pass
 

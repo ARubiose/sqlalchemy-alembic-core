@@ -1,4 +1,4 @@
-from sqlalchemy import Column, Integer, String, Identity, ForeignKey
+from sqlalchemy import Column, Integer, String, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 
 from database.models import Base
@@ -6,13 +6,12 @@ from database.models import Base
 class User(Base):
     __tablename__ = "users"
     
-    id          = Column(Integer, Identity(start=0, cycle=True), primary_key=True)
-    name        = Column(String)
-    fullname    = Column(String)
-    password    = Column(String)
-    phone       = Column(String)
+    id          = Column(BigInteger, primary_key=True)
+    name        = Column(String(length=20), nullable=False)
+    fullname    = Column(String(length=50), nullable=False)
+    password    = Column(String(length=128), nullable=False)
 
-    role_id     = Column(Integer, ForeignKey("roles.id"))
+    role_id     = Column(BigInteger, ForeignKey("roles.id"))
     role = relationship("Role", back_populates="users")
 
     addresses = relationship("Address", back_populates="users")
