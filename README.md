@@ -7,6 +7,11 @@ Alembic allows you to easily manage and apply changes to your database schema, s
 
 In this repository, you will find examples and instructions for setting up and using Alembic and SQLAlchemy in your own projects. We hope you find this codebase helpful in your development efforts!
 
+## Dependencies
+  * SQLAlchemy - [Website(]https://www.sqlalchemy.org/) - [Documentation](https://docs.sqlalchemy.org/en/14/)
+  * Alembic -  [Website](https://alembic.sqlalchemy.org/en/latest/) - [Documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html)
+  * Dependencies stated in [requirements.txt](requirements.txt)
+
 ## Alembic commands
   * `alembic upgrade head` - Migrate the database to the latest version.
   * `alembic downgrade base` - Migrate the database to the base version.
@@ -15,6 +20,16 @@ In this repository, you will find examples and instructions for setting up and u
   * `alembic show` - Show the current revision for each database.
   * `alembic history` - List changeset scripts in chronological order.
   * `alembic current` - Display the current revision for each database.
+  * `alembic check` - Compare database to model.
+  * `alembic heads` - Show current available heads in the script directory.
+  * `alembic branches` - Show current branch points.
+  * `alembic stamp head` - 'stamp' the revision table with the given revision; don't run any migrations.
+  * `alembic branches` - Show current branch points.
+  * `alembic stamp head` - 'stamp' the revision table with the given revision; don't run any migrations.
+
+## Recommended readings
+ * [What does Autogenerate Detect (and what does it not detect?)](https://alembic.sqlalchemy.org/en/latest/autogenerate.html#what-does-autogenerate-detect-and-what-does-it-not-detect)
+
 
 ## Author
 - **Name:** Álvaro Rubio Segovia
