@@ -8,7 +8,7 @@ Alembic allows you to easily manage and apply changes to your database schema, s
 In this repository, you will find examples and instructions for setting up and using Alembic and SQLAlchemy in your own projects. We hope you find this codebase helpful in your development efforts!
 
 ## Dependencies
-  * SQLAlchemy - [Website(]https://www.sqlalchemy.org/) - [Documentation](https://docs.sqlalchemy.org/en/14/)
+  * SQLAlchemy - [Website](https://www.sqlalchemy.org/) - [Documentation](https://docs.sqlalchemy.org/en/14/)
   * Alembic -  [Website](https://alembic.sqlalchemy.org/en/latest/) - [Documentation](https://alembic.sqlalchemy.org/en/latest/tutorial.html)
   * Dependencies stated in [requirements.txt](requirements.txt)
 
