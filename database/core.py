@@ -19,20 +19,15 @@ __all__ = [
 class BaseDatabase(abc.ABC):
     """Base class representing minimal database connections for SQLALchemy"""
     dialect:    str
-    driver:     str 
+    driver:     str
     name:       str
     # Additional connection arguments
-    driver:         str = None
     echo:           bool = False
     future:         bool = True
     engine_args:    typing.Dict[str, typing.Any] = field(default_factory=dict)
 
     def __post_init__(self):
-        connection_string: str = self._create_connection_string()
-
-        self._engine: sqlalchemy.engine.Engine = sqlalchemy.create_engine(
-            connection_string, echo=self.echo, future=self.future, **self.engine_args)
-
+        self._engine: sqlalchemy.engine.Engine = self.generate_engine()
         self._session_factory = sessionmaker(self._engine)
 
     @property
@@ -42,7 +37,6 @@ class BaseDatabase(abc.ABC):
     @property
     def autocommit_session(self):
         return self._session_factory.begin()
-
 
     @property
     def engine(self):
@@ -62,39 +56,53 @@ class BaseDatabase(abc.ABC):
         return self._create_connection_string()
 
     @abc.abstractmethod
-    def _create_connection_string(self) -> str:
+    def _create_connection_string(self, name:str = None) -> str:
         raise NotImplementedError
+
+    # Engine factory methods
+    def generate_engine(self, name: str = None) -> sqlalchemy.engine.Engine:
+        connection_string: str = self._create_connection_string(name=name if name else self.name)
+        return sqlalchemy.create_engine(connection_string, echo=self.echo, future=self.future, **self.engine_args)
+
+    def get_engines_from_list(self, database_list: typing.List[str]) -> typing.Dict[str, sqlalchemy.engine.Engine]:
+        return {name: self.generate_engine(name=name) for name in database_list}
 
 @dataclass(kw_only=True)
 class LiteDatabaseMixin(BaseDatabase):
     """ Lite connection interface """
 
-    def _create_connection_string(self) -> str:
+    def _create_connection_string(self, name:str = None) -> str:
+        if name:
+            return f"{self.dialect}+{self.driver}:///{name}"
         return f"{self.dialect}+{self.driver}:///{self.name}"
+
 
 @dataclass(kw_only=True)
 class AuthDatabaseMixin(BaseDatabase):
     """ Complete connection interface with user, password, host and port """
-    user:       str 
-    password:   str 
+    user:       str
+    password:   str
     port:       int = None
     host:       str = 'localhost'
 
-
-    def _create_connection_string(self) -> str:
+    def _create_connection_string(self, name:str = None) -> str:
         connection_string = f"{self.dialect}+{self.driver}://{self.user}:{self.password}@{self.host}"
 
         if self.port:
             connection_string += f":{self.port}"
 
+        if name:
+            return f"{connection_string}/{name}"
+
         return f"{connection_string}/{self.name}"
+
 
 @dataclass(kw_only=True)
 class DeclarativeInterface:
     """ Declarative interface for database metadata """
     # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
     Base:           typing.Any
-    create_tables:  bool = True
+    create_tables:  bool = False
 
     def __post_init__(self):
         super().__post_init__()
@@ -117,7 +125,6 @@ class AutoMappedInterface:
         super().__post_init__()
         self._base_preparation()
 
-
     def _base_preparation(self):
         self.Base = automap_base()
         self.Base.metadata.reflect(bind=self.engine)
@@ -125,30 +132,50 @@ class AutoMappedInterface:
 
     @property
     def base(self):
-        return self.Base  
+        return self.Base
+
+class InspectionMixin:
+    """Mixin for inspecting database schema"""
+
+    def __post_init__(self):
+        super().__post_init__()
+        self._inspector = sqlalchemy.inspect(self.engine)
+
+    @property
+    def inspector(self):
+        return self._inspector
+
+    def get_table_names(self):
+        return self.base.metadata.tables.keys()
+
+    def get_database_names(self, starts_with=None, ends_with=None):
+        schema_list = self.inspector.get_schema_names()
+
+        if starts_with:
+            schema_list = [name for name in schema_list if name.startswith(starts_with)]
+
+        if ends_with:
+            schema_list = [name for name in schema_list if name.endswith(ends_with)]
+
+        return schema_list
 
 # Module API
 @dataclass(kw_only=True)
-class Database(DeclarativeInterface, AuthDatabaseMixin):
+class Database(DeclarativeInterface, InspectionMixin, AuthDatabaseMixin):
     """ Declarative database class for SQL databases"""
     pass
 
 @dataclass(kw_only=True)
-class LiteDatabase(DeclarativeInterface, LiteDatabaseMixin):
+class LiteDatabase(DeclarativeInterface, InspectionMixin, LiteDatabaseMixin):
     """ Declarative database class for SQLite database"""
     pass
 
 @dataclass(kw_only=True)
-class AutoMappedDatabase(AutoMappedInterface, AuthDatabaseMixin):
+class AutoMappedDatabase(AutoMappedInterface, InspectionMixin, AuthDatabaseMixin):
     """ Automapped database class for SQL databases """
     pass
 
 @dataclass(kw_only=True)
-class AutoMappedLiteDatabase(AutoMappedInterface, LiteDatabaseMixin):
+class AutoMappedLiteDatabase(AutoMappedInterface, InspectionMixin, LiteDatabaseMixin):
     """ Automapped database class for SQLite database """
     pass
-
-
-
-
-

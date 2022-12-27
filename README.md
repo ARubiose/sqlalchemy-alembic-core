@@ -29,7 +29,7 @@ In this repository, you will find examples and instructions for setting up and u
 
 ## Recommended readings
  * [What does Autogenerate Detect (and what does it not detect?)](https://alembic.sqlalchemy.org/en/latest/autogenerate.html#what-does-autogenerate-detect-and-what-does-it-not-detect)
-
+ * [Run Multiple Alembic Environments from one .ini file](https://alembic.sqlalchemy.org/en/latest/cookbook.html#run-multiple-alembic-environments-from-one-ini-file)
 
 ## Author
 - **Name:** Álvaro Rubio Segovia
