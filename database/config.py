@@ -1,3 +1,4 @@
+""" Proxy module for database config"""
 # Core classes for building declarative and automapped databases
 from database.core import Database, AutoMappedDatabase #, LiteDatabase, AutoMappedDatabase, AutoMappedLiteDatabase
 
