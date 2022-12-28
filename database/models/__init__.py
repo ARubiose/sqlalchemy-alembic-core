@@ -16,8 +16,9 @@ meta: MetaData = MetaData(
 Base = declarative_base(metadata=meta)
 
 # TODO: Set up a logger for this
+
 def import_models() -> None:
-    """Import models to be used in database by Base"""
+    """Defered importation of models to be used. Avoid circular imports with Base object."""
     try:
         from .user import User
         from .address import Address

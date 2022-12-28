@@ -96,9 +96,15 @@ class AuthDatabaseMixin(BaseDatabase):
 
         return f"{connection_string}/{self.name}"
 
+class DatabaseBase:
+    """ Class for database with SQLAlquemy base schema"""
+
+    @property
+    def base(self):
+        return self.Base
 
 @dataclass(kw_only=True)
-class DeclarativeInterface:
+class DeclarativeInterface(DatabaseBase):
     """ Declarative interface for database metadata """
     # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
     Base:           typing.Any
@@ -113,12 +119,8 @@ class DeclarativeInterface:
     def _create_tables(self):
         self.Base.metadata.create_all(self.engine)
 
-    @property
-    def base(self):
-        return self.Base
-
 @dataclass(kw_only=True)
-class AutoMappedInterface:
+class AutoMappedInterface(DatabaseBase):
     """ Automapped interface for database metadada """
 
     def __post_init__(self):
@@ -129,10 +131,6 @@ class AutoMappedInterface:
         self.Base = automap_base()
         self.Base.metadata.reflect(bind=self.engine)
         self.Base.prepare()
-
-    @property
-    def base(self):
-        return self.Base
 
 class InspectionMixin:
     """Mixin for inspecting database schema"""
