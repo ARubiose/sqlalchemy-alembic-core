@@ -3,7 +3,7 @@
 Core classes for building declarative and automapped databases
 """
 from pydantic import BaseSettings
-from database import Database
+from database import DeclarativeDatabase, AutoMappedDatabase
 
 # Import Base schema for declarative database
 from database.models import Base
@@ -22,7 +22,7 @@ class DatabaseSettings(BaseSettings):
 
 settings = DatabaseSettings()
 
-database = Database(
+database = DeclarativeDatabase(
     dialect=settings.DIALECT,
     driver=settings.DRIVER,
     name=settings.NAME,

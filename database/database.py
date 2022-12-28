@@ -1,5 +1,4 @@
 """ Core module containing classes for Engine+Base combinations"""
-
 import abc
 import typing
 from dataclasses import dataclass, field
@@ -9,14 +8,14 @@ from sqlalchemy.orm import sessionmaker
 from sqlalchemy.ext.automap import automap_base
 
 __all__ = [
-    'Database',
-    'LiteDatabase',
+    'DeclarativeDatabase',
+    'DeclarativeLiteDatabase',
     'AutoMappedDatabase',
     'AutoMappedLiteDatabase',
 ]
 
 @dataclass(kw_only=True)
-class BaseDatabase(abc.ABC):
+class DatabaseConnection(abc.ABC):
     """Base class representing minimal database connections for SQLALchemy"""
     dialect:    str
     driver:     str
@@ -47,17 +46,9 @@ class BaseDatabase(abc.ABC):
         self._engine = engine
 
     @property
-    @abc.abstractmethod
-    def base(self):
-        return self.Base
-
-    @property
     def connection_string(self):
+        """ Property for the connection string associated to the object """
         return self._create_connection_string()
-
-    @abc.abstractmethod
-    def _create_connection_string(self, name:str = None) -> str:
-        raise NotImplementedError
 
     # Engine factory methods
     def generate_engine(self, name: str = None) -> sqlalchemy.engine.Engine:
@@ -67,8 +58,13 @@ class BaseDatabase(abc.ABC):
     def get_engines_from_list(self, database_list: typing.List[str]) -> typing.Dict[str, sqlalchemy.engine.Engine]:
         return {name: self.generate_engine(name=name) for name in database_list}
 
+    @abc.abstractmethod
+    def _create_connection_string(self, name:str = None) -> str:
+        """ Method for creating connection string for database """
+        raise NotImplementedError
+
 @dataclass(kw_only=True)
-class LiteDatabaseMixin(BaseDatabase):
+class LiteDatabaseConnection(DatabaseConnection):
     """ Lite connection interface """
 
     def _create_connection_string(self, name:str = None) -> str:
@@ -78,7 +74,7 @@ class LiteDatabaseMixin(BaseDatabase):
 
 
 @dataclass(kw_only=True)
-class AuthDatabaseMixin(BaseDatabase):
+class AuthDatabaseConnection(DatabaseConnection):
     """ Complete connection interface with user, password, host and port """
     user:       str
     password:   str
@@ -96,15 +92,21 @@ class AuthDatabaseMixin(BaseDatabase):
 
         return f"{connection_string}/{self.name}"
 
-class DatabaseBase:
-    """ Class for database with SQLAlquemy base schema"""
+class SQLAlchemyDatabase(typing.Protocol):
+    """ Protocol for ORM SQLAlchemy engine + Base combination """
+    engine: sqlalchemy.engine.Engine
+    Base: typing.Any
+
+class DatabaseORM(SQLAlchemyDatabase):
+    """ Class to add property function for base schema """
 
     @property
-    def base(self):
+    def base(self) -> typing.Any:
+        """ Property for the base schema associated to the database """
         return self.Base
 
 @dataclass(kw_only=True)
-class DeclarativeInterface(DatabaseBase):
+class DeclarativeBase(DatabaseORM):
     """ Declarative interface for database metadata """
     # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
     Base:           typing.Any
@@ -117,10 +119,10 @@ class DeclarativeInterface(DatabaseBase):
             self._create_tables()
 
     def _create_tables(self):
-        self.Base.metadata.create_all(self.engine)
+        self.base.metadata.create_all(self.engine)
 
 @dataclass(kw_only=True)
-class AutoMappedInterface(DatabaseBase):
+class AutoMappedBase(DatabaseORM):
     """ Automapped interface for database metadada """
 
     def __post_init__(self):
@@ -132,7 +134,7 @@ class AutoMappedInterface(DatabaseBase):
         self.Base.metadata.reflect(bind=self.engine)
         self.Base.prepare()
 
-class InspectionMixin:
+class InspectionMixin(SQLAlchemyDatabase):
     """Mixin for inspecting database schema"""
 
     def __post_init__(self):
@@ -144,7 +146,7 @@ class InspectionMixin:
         return self._inspector
 
     def get_table_names(self):
-        return self.base.metadata.tables.keys()
+        return self.Base.metadata.tables.keys()
 
     def get_database_names(self, starts_with=None, ends_with=None):
         schema_list = self.inspector.get_schema_names()
@@ -159,21 +161,21 @@ class InspectionMixin:
 
 # Module API
 @dataclass(kw_only=True)
-class Database(DeclarativeInterface, InspectionMixin, AuthDatabaseMixin):
+class DeclarativeDatabase(AuthDatabaseConnection, DeclarativeBase, InspectionMixin):
     """ Declarative database class for SQL databases"""
     pass
 
 @dataclass(kw_only=True)
-class LiteDatabase(DeclarativeInterface, InspectionMixin, LiteDatabaseMixin):
+class DeclarativeLiteDatabase(LiteDatabaseConnection, DeclarativeBase, InspectionMixin):
     """ Declarative database class for SQLite database"""
     pass
 
 @dataclass(kw_only=True)
-class AutoMappedDatabase(AutoMappedInterface, InspectionMixin, AuthDatabaseMixin):
+class AutoMappedDatabase(AuthDatabaseConnection, AutoMappedBase, InspectionMixin):
     """ Automapped database class for SQL databases """
     pass
 
 @dataclass(kw_only=True)
-class AutoMappedLiteDatabase(AutoMappedInterface, InspectionMixin, LiteDatabaseMixin):
+class AutoMappedLiteDatabase(LiteDatabaseConnection, AutoMappedBase, InspectionMixin):
     """ Automapped database class for SQLite database """
     pass
