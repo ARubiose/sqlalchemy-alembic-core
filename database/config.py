@@ -2,23 +2,27 @@
 
 Core classes for building declarative and automapped databases
 """
+
 from pydantic import BaseSettings
 from database import DeclarativeDatabase, AutoMappedDatabase, DeclarativeLiteDatabase
 
 # Import Base schema for declarative database
 from database.models import Base
 
-class DatabaseSettings(BaseSettings):
+class LiteDatabaseSettings(BaseSettings):
     """Database settings for database connection"""
     DIALECT:    str
     DRIVER:     str
     NAME:       str
-    USER:       str = None
-    PASSWORD:   str = None
 
     class Config:
         """Config for pydantic settings model"""
         env_file = '.env'
+
+class DatabaseSettings(LiteDatabaseSettings):
+    """Database settings for database connection"""
+    USER:       str
+    PASSWORD:   str
 
 settings = DatabaseSettings()
 

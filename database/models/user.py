@@ -1,9 +1,13 @@
-import typing
-import sqlalchemy
+from typing import TYPE_CHECKING, List
+
 from sqlalchemy import Column, String, ForeignKey, BigInteger
 from sqlalchemy.orm import relationship
 
 from database.models import Base
+
+if TYPE_CHECKING:
+    from .role import Role
+    from .address import Address
 
 class User(Base):
     __tablename__ = "users"
@@ -16,13 +20,9 @@ class User(Base):
     photo       = Column(String(length=100))
 
     role_id     = Column(BigInteger, ForeignKey("roles.id"))
-    role = relationship("Role", back_populates="users")
 
-    addresses = relationship("Address", back_populates="users")
-
-    def __init__(self, *args: typing.Any, **kwargs: typing.Any) -> None:
-        # TODO: Add validation
-        super().__init__(*args, **kwargs)
+    role:       List["Role"]    = relationship("Role", back_populates="users")
+    addresses:  List["Address"] = relationship("Address", back_populates="users")
 
     def __repr__(self):
         return f"<User(name='{self.name}', fullname='{self.fullname}')>"

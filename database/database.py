@@ -4,7 +4,7 @@ import typing
 from dataclasses import dataclass, field
 
 import sqlalchemy
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.automap import automap_base
 
 __all__ = [
@@ -25,33 +25,33 @@ class DatabaseConnection(abc.ABC):
     future:         bool = True
     engine_args:    typing.Dict[str, typing.Any] = field(default_factory=dict)
 
-    def __post_init__(self):
+    def __post_init__(self) -> None:
         self._engine: sqlalchemy.engine.Engine = self.generate_engine()
         self._session_factory = sessionmaker(self._engine)
 
     @property
-    def session(self):
+    def session(self) -> Session:
         return self._session_factory()
 
     @property
-    def autocommit_session(self):
+    def autocommit_session(self) -> Session:
         return self._session_factory.begin()
 
     @property
-    def engine(self):
+    def engine(self) -> sqlalchemy.engine.Engine:
         return self._engine
 
     @engine.setter
-    def engine(self, engine: sqlalchemy.engine.Engine):
+    def engine(self, engine: sqlalchemy.engine.Engine) -> None:
         self._engine = engine
 
     @property
-    def connection_string(self):
+    def connection_string(self) -> str:
         """ Property for the connection string associated to the object """
         return self._create_connection_string()
 
     # Engine factory methods
-    def generate_engine(self, name: str = None) -> sqlalchemy.engine.Engine:
+    def generate_engine(self, name: typing.Optional[str] = None) -> sqlalchemy.engine.Engine:
         connection_string: str = self._create_connection_string(name=name if name else self.name)
         return sqlalchemy.create_engine(connection_string, echo=self.echo, future=self.future, **self.engine_args)
 
@@ -59,7 +59,7 @@ class DatabaseConnection(abc.ABC):
         return {name: self.generate_engine(name=name) for name in database_list}
 
     @abc.abstractmethod
-    def _create_connection_string(self, name:str = None) -> str:
+    def _create_connection_string(self, name:typing.Optional[str] = None) -> str:
         """ Method for creating connection string for database """
         raise NotImplementedError
 
@@ -67,7 +67,7 @@ class DatabaseConnection(abc.ABC):
 class LiteDatabaseConnection(DatabaseConnection):
     """ Lite connection interface """
 
-    def _create_connection_string(self, name:str = None) -> str:
+    def _create_connection_string(self, name:typing.Optional[str] = None) -> str:
         if name:
             return f"{self.dialect}+{self.driver}:///{name}"
         return f"{self.dialect}+{self.driver}:///{self.name}"
@@ -78,10 +78,10 @@ class AuthDatabaseConnection(DatabaseConnection):
     """ Complete connection interface with user, password, host and port """
     user:       str
     password:   str
-    port:       int = None
-    host:       str = 'localhost'
+    port:       typing.Optional[int] = None
+    host:       typing.Optional[str] = 'localhost'
 
-    def _create_connection_string(self, name:str = None) -> str:
+    def _create_connection_string(self, name:typing.Optional[str] = None) -> str:
         connection_string = f"{self.dialect}+{self.driver}://{self.user}:{self.password}@{self.host}"
 
         if self.port:
@@ -131,21 +131,21 @@ class AutoMappedBase(SQLAlchemyDatabase):
         self.Base.metadata.reflect(bind=self.engine)
         self.Base.prepare()
 
-class InspectionMixin:
+class InspectionMixin(SQLAlchemyDatabase):
     """Mixin for inspecting database schema"""
 
-    def __post_init__(self: SQLAlchemyDatabase):
+    def __post_init__(self):
         super().__post_init__()
         self._inspector = sqlalchemy.inspect(self.engine)
 
     @property
-    def inspector(self: SQLAlchemyDatabase):
+    def inspector(self):
         return self._inspector
 
-    def get_table_names(self:SQLAlchemyDatabase):
+    def get_table_names(self):
         return self.base.metadata.tables.keys()
 
-    def get_database_names(self: SQLAlchemyDatabase, starts_with=None, ends_with=None):
+    def get_database_names(self, starts_with=None, ends_with=None):
         schema_list = self.inspector.get_schema_names()
 
         if starts_with:
