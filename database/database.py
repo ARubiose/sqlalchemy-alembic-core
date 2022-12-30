@@ -92,21 +92,18 @@ class AuthDatabaseConnection(DatabaseConnection):
 
         return f"{connection_string}/{self.name}"
 
+# https://peps.python.org/pep-0544/#protocol-members
 class SQLAlchemyDatabase(typing.Protocol):
     """ Protocol for ORM SQLAlchemy engine + Base combination """
-    engine: sqlalchemy.engine.Engine
     Base: typing.Any
-
-class DatabaseORM(SQLAlchemyDatabase):
-    """ Class to add property function for base schema """
-
     @property
-    def base(self) -> typing.Any:
-        """ Property for the base schema associated to the database """
+    def engine(self) -> sqlalchemy.engine.Engine: ...
+    @property
+    def base(self) -> typing.Any: 
         return self.Base
 
 @dataclass(kw_only=True)
-class DeclarativeBase(DatabaseORM):
+class DeclarativeBase(SQLAlchemyDatabase):
     """ Declarative interface for database metadata """
     # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
     Base:           typing.Any
@@ -122,7 +119,7 @@ class DeclarativeBase(DatabaseORM):
         self.base.metadata.create_all(self.engine)
 
 @dataclass(kw_only=True)
-class AutoMappedBase(DatabaseORM):
+class AutoMappedBase(SQLAlchemyDatabase):
     """ Automapped interface for database metadada """
 
     def __post_init__(self):
@@ -134,21 +131,21 @@ class AutoMappedBase(DatabaseORM):
         self.Base.metadata.reflect(bind=self.engine)
         self.Base.prepare()
 
-class InspectionMixin(SQLAlchemyDatabase):
+class InspectionMixin:
     """Mixin for inspecting database schema"""
 
-    def __post_init__(self):
+    def __post_init__(self: SQLAlchemyDatabase):
         super().__post_init__()
         self._inspector = sqlalchemy.inspect(self.engine)
 
     @property
-    def inspector(self):
+    def inspector(self: SQLAlchemyDatabase):
         return self._inspector
 
-    def get_table_names(self):
-        return self.Base.metadata.tables.keys()
+    def get_table_names(self:SQLAlchemyDatabase):
+        return self.base.metadata.tables.keys()
 
-    def get_database_names(self, starts_with=None, ends_with=None):
+    def get_database_names(self: SQLAlchemyDatabase, starts_with=None, ends_with=None):
         schema_list = self.inspector.get_schema_names()
 
         if starts_with:
