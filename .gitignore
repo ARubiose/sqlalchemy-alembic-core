@@ -26,3 +26,6 @@ cover/
 
 # Development databases
 **/**.db
+
+# Test module
+main.py
