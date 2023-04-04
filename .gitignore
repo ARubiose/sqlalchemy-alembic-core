@@ -33,3 +33,10 @@ playground.py
 # Data 
 data/*
 !data/.gitkeep
+
+# Logs
+logs/*
+!logs/.gitkeep
+
+# Environment file
+.env
