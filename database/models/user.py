@@ -2,13 +2,11 @@ from typing import TYPE_CHECKING
 from typing import List
 from typing import Optional
 
-from sqlalchemy import BigInteger
 from sqlalchemy import String
 from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Mapped
-
 
 from database.models.base import Base
 

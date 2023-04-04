@@ -1,37 +1,41 @@
 """ Database factory module """
-from database import DeclarativeDatabase, AutoMappedLiteDatabase, DeclarativeLiteDatabase
+from database.database import DeclarativeDatabase, AutoMappedDatabase, DeclarativeLiteDatabase, AutoMappedLiteDatabase
 
 # Import Base schema for declarative database
-from database.models import Base
+from database.models.base import Base
+
+# Import models for declarative base population
+from database.models import *
 
 # Import settings for database connection
-from database.config import settings
+from database.config import settings, BASE_DIR
 
 # Example of declarative database
-lite_database = DeclarativeDatabase(
-    dialect=settings.DIALECT,
-    driver=settings.DRIVER,
-    name=settings.NAME,
-    Base=Base,
-    user=settings.USER,
-    password=settings.PASSWORD
-)
-""" Example of declarative database using envornment variables."""
+def get_declarative_database():
+    """Factory function to get declarative database."""
+    return DeclarativeDatabase(
+        dialect=settings.DIALECT,
+        driver=settings.DRIVER,
+        name=settings.NAME,
+        Base=Base,
+        user=settings.USER,
+        password=settings.PASSWORD
+    )
 
-# Example of declarative lite database
-lite_database = DeclarativeLiteDatabase(
-    dialect='sqlite',
-    driver='pysqlite',
-    name='database.db',
-    Base=Base,
-    create_tables=True,
-)
-"""Example of declarative lite database."""
+def get_declarative_lite_database():
+    """Factory function to get declarative lite database."""
+    return DeclarativeLiteDatabase(
+        dialect='sqlite',
+        driver='pysqlite',
+        name= 'database.db',
+        Base=Base,
+        create_tables=True,
+    )
 
-# Example of automapped database with user and password
-automapped_database = AutoMappedLiteDatabase(
-    dialect='sqlite',
-    driver='pysqlite',
-    name='database.db'
-)
-"""Example of automapped lite database."""
+def get_automapped_lite_database():
+    """Factory function to get automapped lite database."""
+    return AutoMappedLiteDatabase(
+        dialect='sqlite',
+        driver='pysqlite',
+        name= 'database.db',
+    )

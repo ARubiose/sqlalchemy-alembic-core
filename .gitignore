@@ -27,5 +27,9 @@ cover/
 # Development databases
 **/**.db
 
-# Test module
-main.py
+# Playground modules
+playground.py
+
+# Data 
+data/*
+!data/.gitkeep

@@ -2,8 +2,10 @@
 
 Core classes for building declarative and automapped databases
 """
-
+from pathlib import Path
 from pydantic import BaseSettings
+
+BASE_DIR = Path(__file__).parents[2].resolve()
 
 class LiteDatabaseSettings(BaseSettings):
     """Database settings for database connection"""

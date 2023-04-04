@@ -1,9 +1,11 @@
 """ Core module containing classes for Engine+Base combinations"""
 import abc
 import typing
+from typing import Protocol
 from dataclasses import dataclass, field
 
 import sqlalchemy
+from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.automap import automap_base
 
@@ -16,7 +18,7 @@ __all__ = [
 
 @dataclass(kw_only=True)
 class DatabaseConnection(abc.ABC):
-    """Base class representing minimal database connection data for SQLALchemy.
+    """Base abstract class representing minimal database connection data for SQLALchemy.
     
     It creates a SQLAlchemy engine and a session factory.
     
@@ -45,12 +47,13 @@ class DatabaseConnection(abc.ABC):
     def __post_init__(self) -> None:
         self._engine: sqlalchemy.engine.Engine = self.generate_engine()
         self._session_factory = sessionmaker(self._engine)
+        super().__post_init__()
 
     @property
     def session(self) -> Session:
-        """Property for a session object that generates a new session for each call.
+        """Property for a session object that generates a new session for each call. 
         
-        It must be used with a context manager.
+        Only read access is allowed and it must be used with a context manager.
         
         Returns:
             Session: A session object
@@ -59,7 +62,9 @@ class DatabaseConnection(abc.ABC):
 
     @property
     def autocommit_session(self) -> Session:
-        """Property for a session that automatically commits the transaction when the context manager exits
+        """Property for a session that automatically commits the transaction when the context manager exits. 
+        
+        Only read access is allowed and it must be used with a context manager.
         
         Returns:
             Session: A session object
@@ -91,7 +96,9 @@ class DatabaseConnection(abc.ABC):
 
     @property
     def connection_string(self) -> str:
-        """ Property for the connection string associated to the object 
+        """ Property for the connection string associated to the object.
+
+        Only read access is allowed.
         
         Returns:
             str: A connection string
@@ -135,8 +142,8 @@ class DatabaseConnection(abc.ABC):
         raise NotImplementedError
 
 @dataclass(kw_only=True)
-class LiteDatabaseConnection(DatabaseConnection):
-    """ Lite connection interface """
+class LiteDatabaseConnection(DatabaseConnection, abc.ABC):
+    """ Lite connection abstract class representing minimal database connection data for SQLALchemy. """
 
     def _create_connection_string(self, name:typing.Optional[str] = None) -> str:
         """ Method for creating connection string for sqlite database"""
@@ -146,8 +153,8 @@ class LiteDatabaseConnection(DatabaseConnection):
 
 
 @dataclass(kw_only=True)
-class AuthDatabaseConnection(DatabaseConnection):
-    """ Complete connection interface with user, password, host and port 
+class AuthDatabaseConnection(DatabaseConnection, abc.ABC):
+    """ Complete connection abstract class representing complete database connection data for SQLALchemy.
     
     Attributes:
         user (str): The user name to authenticate with.
@@ -172,47 +179,57 @@ class AuthDatabaseConnection(DatabaseConnection):
 
         return f"{connection_string}/{self.name}"
 
-# https://peps.python.org/pep-0544/#protocol-members
-class SQLAlchemyDatabase(typing.Protocol):
-    """ Protocol for ORM SQLAlchemy engine + Base combination 
+@dataclass(kw_only=True)
+class DatabaseBase(abc.ABC):
+    """ Anstract class for ORM SQLAlchemy ORM base
     
     Attributes:
         Base (Any): The base for the database. Only read. Use the base property to get the base.
         engine (Engine): A SQLAlchemy engine object
         base (Any): The base for the database.
     """
-    Base: typing.Any
+
+    def __post_init__(self):
+        if not hasattr(self, 'Base'):
+            raise AttributeError("Base attribute is not defined")
+
     @property
-    def engine(self) -> sqlalchemy.engine.Engine: ...
-    @property
-    def base(self) -> typing.Any: 
+    def base(self) -> DeclarativeBase: 
+        """Property for the base associated to the object.
+
+        Only read access is allowed.
+        
+        Returns:
+            DeclarativeBase: A SQLAlchemy base object
+        """
         return self.Base
 
 @dataclass(kw_only=True)
-class DeclarativeBase(SQLAlchemyDatabase):
-    """ Declarative interface for database Base 
+class DeclarativeDatabaseBase(DatabaseBase, abc.ABC):
+    """ Declarative base abstract class for declarative Base 
     
     Attributes:
         Base (Any): The declarative base for the database.
         create_tables (bool, optional): If True, the tables are created when the object is instantiated. Defaults to False.
         """
     # Base typing: https://stackoverflow.com/questions/58325495/what-type-do-i-use-for-sqlalchemy-declarative-base
-    Base:           typing.Any
+    Base:           DeclarativeBase
     create_tables:  bool = False
 
     def __post_init__(self):
-        super().__post_init__()
 
         if self.create_tables:
             self._create_tables()
+
+        super().__post_init__()
 
     def _create_tables(self):
         """ Method for creating the all the tables from the base in the database """
         self.base.metadata.create_all(self.engine)
 
 @dataclass(kw_only=True)
-class AutoMappedBase(SQLAlchemyDatabase):
-    """ Automapped base interface for database metadada """
+class AutoMappedDatabaseBase(DatabaseBase, abc.ABC):
+    """ Automapped base abstract class for automapped Base"""
 
     def __post_init__(self):
         super().__post_init__()
@@ -224,6 +241,26 @@ class AutoMappedBase(SQLAlchemyDatabase):
         self.Base.metadata.reflect(bind=self.engine)
         self.Base.prepare()
 
+class SQLAlchemyDatabase(Protocol):
+    """ Protocol for SQLAlchemy database objects.
+     
+    
+     """
+    @property
+    def engine(self) -> sqlalchemy.engine.Engine:
+        """ A SQLAlchemy engine object """
+        ...
+
+    @property
+    def base(self) -> DeclarativeBase:
+        """ A SQLAlchemy base object """
+        ...
+
+    @property
+    def session(self) -> Session:
+        """ A SQLAlchemy session object """
+        ...
+
 class InspectionMixin(SQLAlchemyDatabase):
     """Mixin for inspecting database schema
     
@@ -232,8 +269,10 @@ class InspectionMixin(SQLAlchemyDatabase):
     """
 
     def __post_init__(self):
-        super().__post_init__()
-        self._inspector = sqlalchemy.inspect(self.engine)
+        try:
+            self._inspector = sqlalchemy.inspect(self.engine)
+        except sqlalchemy.exc.OperationalError as e:
+            raise e
 
     @property
     def inspector(self):
@@ -270,21 +309,21 @@ class InspectionMixin(SQLAlchemyDatabase):
 
 # Module API
 @dataclass(kw_only=True)
-class DeclarativeDatabase(AuthDatabaseConnection, DeclarativeBase, InspectionMixin):
+class DeclarativeDatabase(AuthDatabaseConnection, DeclarativeDatabaseBase, InspectionMixin):
     """ Declarative database class for SQL databases"""
     pass
 
 @dataclass(kw_only=True)
-class DeclarativeLiteDatabase(LiteDatabaseConnection, DeclarativeBase, InspectionMixin):
+class DeclarativeLiteDatabase(LiteDatabaseConnection, DeclarativeDatabaseBase, InspectionMixin):
     """ Declarative database class for SQLite database"""
     pass
 
 @dataclass(kw_only=True)
-class AutoMappedDatabase(AuthDatabaseConnection, AutoMappedBase, InspectionMixin):
+class AutoMappedDatabase(AuthDatabaseConnection, AutoMappedDatabaseBase, InspectionMixin):
     """ Automapped database class for SQL databases """
     pass
 
 @dataclass(kw_only=True)
-class AutoMappedLiteDatabase(LiteDatabaseConnection, AutoMappedBase, InspectionMixin):
+class AutoMappedLiteDatabase(LiteDatabaseConnection, AutoMappedDatabaseBase, InspectionMixin):
     """ Automapped database class for SQLite database """
     pass
