@@ -1,58 +1,35 @@
-from typing import TYPE_CHECKING, List
+from typing import TYPE_CHECKING
+from typing import List
+from typing import Optional
 
-from sqlalchemy import Column, String, ForeignKey, BigInteger
+from sqlalchemy import BigInteger
+from sqlalchemy import String
+from sqlalchemy import ForeignKey
 from sqlalchemy.orm import relationship
+from sqlalchemy.orm import mapped_column
+from sqlalchemy.orm import Mapped
 
-from database.models import Base
+
+from database.models.base import Base
 
 if TYPE_CHECKING:
     from .role import Role
     from .address import Address
 
+
 class User(Base):
     __tablename__ = "users"
-    
-    id          = Column(BigInteger, primary_key=True)
-    name        = Column(String(length=20), nullable=False)
-    fullname    = Column(String(length=50), nullable=False)
-    password    = Column(String(length=128), nullable=False)
-    phone       = Column(String(length=20))
-    photo       = Column(String(length=100))
 
-    role_id     = Column(BigInteger, ForeignKey("roles.id"))
+    id:        Mapped[int] = mapped_column(primary_key=True)
+    name:      Mapped[str] = mapped_column(String(20), nullable=False)
+    fullname:  Mapped[str] = mapped_column(String(50), nullable=False)
+    password:  Mapped[str] = mapped_column(String(128), nullable=False)
+    phone:     Mapped[Optional[str]] = mapped_column(String(length=20))
+    photo:     Mapped[Optional[str]] = mapped_column(String(length=100))
 
-    role:       List["Role"]    = relationship("Role", back_populates="users")
-    addresses:  List["Address"] = relationship("Address", back_populates="users")
+    role_id:   Mapped[int] = mapped_column(ForeignKey("roles.id"), nullable=False)
+    role:      Mapped["Role"] = relationship(back_populates="users")
+    addresses:  Mapped[List["Address"]] = relationship(back_populates="users")
 
     def __repr__(self):
         return f"<User(name='{self.name}', fullname='{self.fullname}')>"
-
-    # CRUD
-    @classmethod
-    def get_all(cls, session):
-        return session.query(cls).all()
-
-    @classmethod
-    def get_by_id(cls, session, id):
-        return session.query(cls).filter(cls.id == id).first()
-
-    @classmethod
-    def get_by_attr(cls, session, attr, value):
-        return session.query(cls).filter(getattr(cls, attr) == value).first()
-
-    @classmethod
-    def delete_by_id(cls, session, id):
-        session.query(cls).filter(cls.id == id).delete()
-        session.commit()
-
-    @classmethod
-    def delete_by_attr(cls, session, attr, value):
-        session.query(cls).filter(getattr(cls, attr) == value).delete()
-        session.commit()
-
-    @classmethod
-    def update_by_id(cls, session, id, **kwargs):
-        session.query(cls).filter(cls.id == id).update(kwargs)
-        session.commit()
-
-    # Validation

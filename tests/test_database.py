@@ -1,77 +1,14 @@
 import pytest
+import typing
+from pathlib import Path
 
+import sqlalchemy
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 
-from database.database import LiteDatabaseConnection, AuthDatabaseConnection, DeclarativeLiteDatabase, AutoMappedLiteDatabase
+from database.database import DeclarativeLiteDatabase, AutoMappedLiteDatabase, DeclarativeDatabase, AutoMappedDatabase
 
-@pytest.fixture
-def lite_dialect():
-    return "sqlite"
-
-@pytest.fixture
-def lite_driver():
-    return "pysqlite"
-
-@pytest.fixture
-def mysql_dialect():
-    return "mysql"
-
-@pytest.fixture
-def mysql_driver():
-    return "pymysql"
-
-@pytest.fixture
-def database_name():
-    return "database"
-
-@pytest.fixture
-def user_name():
-    return "user"
-
-@pytest.fixture
-def user_password():
-    return "***"
-
-@pytest.fixture
-def user_host():
-    return "localhost"
-
-@pytest.fixture
-def user_port():
-    return 5432
-
-@pytest.fixture
-def lite_database_connection( lite_dialect, lite_driver, database_name ):
-    return LiteDatabaseConnection(
-        dialect = lite_dialect,
-        driver  = lite_driver,
-        name    = database_name
-    )
-
-@pytest.fixture
-def auth_database_connection( mysql_dialect, mysql_driver, database_name, user_name, user_password, user_host, user_port ):
-    
-    # It requires the database driver to be installed
-    return AuthDatabaseConnection(
-        dialect = mysql_dialect,
-        driver  = mysql_driver,
-        name    = database_name,
-        user    = user_name,
-        password= user_password,
-        host    = user_host,
-        port    = user_port
-    )
-
-@pytest.fixture
-def declarative_lite_database( lite_dialect, lite_driver, database_name, base, tmp_path):
-    return DeclarativeLiteDatabase(
-        dialect = lite_dialect,
-        driver  = lite_driver,
-        name    = tmp_path / database_name,
-        Base= base,
-        create_tables = True
-    )
+DB_DIR = Path(__file__).parent / "database"
 
 @pytest.fixture
 def base():
@@ -84,31 +21,80 @@ def base():
 
     return Base
 
+@pytest.fixture
+def declarative_lite_db_connection( base : typing.Any ):
+    """Generate a lite database connection with declarative Base."""
+    return DeclarativeLiteDatabase(
+        dialect = "sqlite",
+        driver  = "pysqlite",
+        name    = DB_DIR / "test_db.db",
+        Base    = base,
+    )
+
+@pytest.fixture
+def declarative_db_connection( base: typing.Any):
+    """Generate a database connection with declarative Base. Requires database server to be running."""
+    return DeclarativeDatabase(
+        dialect = "mysql",
+        driver  = "pymysql",
+        name    = "test",
+        user    = "root",
+        password= "",
+        Base    = base,
+    )
+
+@pytest.fixture
+def automapped_lite_db_connection( ):
+    """Generate a lite database with automapped Base."""
+    return AutoMappedLiteDatabase(
+        dialect = "sqlite",
+        driver  = "pysqlite",
+        name    = DB_DIR / "test_db.db",
+    )
+
+@pytest.fixture
+def automapped_db_connection( ):
+    """Generate a database connection with automapped Base. Requires database server to be running."""
+    return AutoMappedDatabase(
+        dialect = "mysql",
+        driver  = "pymysql",
+        name    = "test",
+        user    = "root",
+        password= "",
+    )
+
 # Tests
-def test_lite_database_connection(lite_database_connection: LiteDatabaseConnection):
+def test_lite_database_connection_attrs(declarative_lite_db_connection: DeclarativeLiteDatabase):
     """Test that connection to a SQLite database match SQLAlchemy engine connection."""    
 
-    sqlalchemy_url = lite_database_connection.engine.url
+    sqlalchemy_url = declarative_lite_db_connection.engine.url
 
-    assert sqlalchemy_url.render_as_string() == lite_database_connection.connection_string
-    assert sqlalchemy_url.get_driver_name() == lite_database_connection.engine.driver
-    assert sqlalchemy_url.get_dialect().name == lite_database_connection.engine.dialect.name
-    assert sqlalchemy_url.database == lite_database_connection.name
+    assert sqlalchemy_url.render_as_string() == declarative_lite_db_connection.connection_string
+    assert sqlalchemy_url.get_driver_name() == declarative_lite_db_connection.engine.driver
+    assert sqlalchemy_url.get_dialect().name == declarative_lite_db_connection.engine.dialect.name
+    assert sqlalchemy_url.database == str(declarative_lite_db_connection.name)
 
-def test_database_connection(auth_database_connection: AuthDatabaseConnection):
+def test_database_connection_attrs(declarative_db_connection: DeclarativeDatabase):
     """Test that connection to a SQL database match SQLAlchemy engine connection."""    
 
-    sqlalchemy_url = auth_database_connection.engine.url
+    sqlalchemy_url = declarative_db_connection.engine.url
 
-    assert sqlalchemy_url.render_as_string() == auth_database_connection.connection_string
-    assert sqlalchemy_url.get_driver_name() == auth_database_connection.engine.driver
-    assert sqlalchemy_url.get_dialect().name == auth_database_connection.engine.dialect.name
-    assert sqlalchemy_url.database == auth_database_connection.name
-    assert sqlalchemy_url.username == auth_database_connection.user
-    assert sqlalchemy_url.password == auth_database_connection.password
-    assert sqlalchemy_url.host == auth_database_connection.host
-    assert sqlalchemy_url.port == auth_database_connection.port
+    assert sqlalchemy_url.get_driver_name() == declarative_db_connection.engine.driver
+    assert sqlalchemy_url.get_dialect().name == declarative_db_connection.engine.dialect.name
+    assert sqlalchemy_url.database == declarative_db_connection.name
+    assert sqlalchemy_url.username == declarative_db_connection.user
+    assert sqlalchemy_url.password == declarative_db_connection.password
+    assert sqlalchemy_url.host == declarative_db_connection.host
+    assert sqlalchemy_url.port == declarative_db_connection.port
 
-def test_declarative_table_names(declarative_lite_database: DeclarativeLiteDatabase):
+def test_table_names(declarative_lite_db_connection: DeclarativeLiteDatabase):
     """Test that the declarative base is working properly."""
-    assert "items" in declarative_lite_database.get_table_names()
+    assert "items" in declarative_lite_db_connection.get_table_names()
+
+def test_automapped_table_names(automapped_lite_db_connection: AutoMappedLiteDatabase):
+    """Test that the automapped base is working properly."""
+    assert "items" in automapped_lite_db_connection.get_table_names()
+
+def test_engine_type(declarative_lite_db_connection: DeclarativeLiteDatabase):
+    """Test that the engine is a SQLAlchemy engine."""
+    assert isinstance(declarative_lite_db_connection.engine, sqlalchemy.engine.Engine)

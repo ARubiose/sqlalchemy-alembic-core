@@ -1,5 +1,5 @@
 """ Database factory module """
-from database import DeclarativeDatabase, AutoMappedDatabase, DeclarativeLiteDatabase
+from database import DeclarativeDatabase, AutoMappedLiteDatabase, DeclarativeLiteDatabase
 
 # Import Base schema for declarative database
 from database.models import Base
@@ -8,7 +8,7 @@ from database.models import Base
 from database.config import settings
 
 # Example of declarative database
-database = DeclarativeDatabase(
+lite_database = DeclarativeDatabase(
     dialect=settings.DIALECT,
     driver=settings.DRIVER,
     name=settings.NAME,
@@ -29,7 +29,7 @@ lite_database = DeclarativeLiteDatabase(
 """Example of declarative lite database."""
 
 # Example of automapped database with user and password
-database = AutoMappedDatabase(
+automapped_database = AutoMappedLiteDatabase(
     dialect='sqlite',
     driver='pysqlite',
     name='database.db'
