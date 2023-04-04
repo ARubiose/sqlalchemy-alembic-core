@@ -17,12 +17,12 @@ if config.config_file_name is not None:
 # target_metadata = mymodel.Base.metadata
 
 # BASE MAPPING
-from database.models import Base
+from sqltoolbox.factory import Base
 target_metadata = Base.metadata
 
 # ENGINE
-from database.config import database
-connectable = database.engine
+from sqltoolbox.factory import get_declarative_database
+connectable = get_declarative_database().engine
 
 # other values from the config, defined by the needs of env.py,
 # can be acquired:
@@ -65,7 +65,6 @@ def run_migrations_online() -> None:
         context.configure(
             connection=connection, 
             target_metadata=target_metadata,
-            # Hooks for custom behavior
         )
 
         with context.begin_transaction():

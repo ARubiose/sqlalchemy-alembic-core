@@ -16,3 +16,17 @@ meta: MetaData = MetaData(
 class Base(DeclarativeBase):
     """Base class for ORM."""
     metadata = meta
+
+def create_declarative_base():
+    """Create a declarative base."""
+
+    class Base(DeclarativeBase):
+        """Base class for ORM."""
+        metadata = meta
+
+    # Deferring the import of the models to avoid circular imports
+    from sqltoolbox.models import user
+    from sqltoolbox.models import role
+    from sqltoolbox.models import address
+        
+    return Base

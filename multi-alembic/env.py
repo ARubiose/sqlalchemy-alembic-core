@@ -4,7 +4,7 @@ from logging.config import fileConfig
 
 from alembic import context
 
-from database.config import database
+from sqltoolbox.config import database
 
 USE_TWOPHASE = False
 

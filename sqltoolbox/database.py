@@ -1,6 +1,7 @@
 """ Core module containing classes for Engine+Base combinations"""
 import abc
 import typing
+import logging
 from typing import Protocol
 from dataclasses import dataclass, field
 
@@ -9,12 +10,17 @@ from sqlalchemy.orm import DeclarativeBase
 from sqlalchemy.orm import sessionmaker, Session
 from sqlalchemy.ext.automap import automap_base
 
+from sqltoolbox.models.base import create_declarative_base
+
 __all__ = [
     'DeclarativeDatabase',
     'DeclarativeLiteDatabase',
     'AutoMappedDatabase',
     'AutoMappedLiteDatabase',
+    'create_declarative_base',
 ]
+
+logger = logging.getLogger('database')
 
 @dataclass(kw_only=True)
 class DatabaseConnection(abc.ABC):
@@ -219,6 +225,7 @@ class DeclarativeDatabaseBase(DatabaseBase, abc.ABC):
     def __post_init__(self):
 
         if self.create_tables:
+            logger.warning(f"Creating tables for {self.name}. This may create conflicts with alembic.")
             self._create_tables()
 
         super().__post_init__()
@@ -272,6 +279,7 @@ class InspectionMixin(SQLAlchemyDatabase):
         try:
             self._inspector = sqlalchemy.inspect(self.engine)
         except sqlalchemy.exc.OperationalError as e:
+            logger.error(f"Could not create inspector for database {self.name}. {e}")
             raise e
 
     @property
@@ -327,3 +335,5 @@ class AutoMappedDatabase(AuthDatabaseConnection, AutoMappedDatabaseBase, Inspect
 class AutoMappedLiteDatabase(LiteDatabaseConnection, AutoMappedDatabaseBase, InspectionMixin):
     """ Automapped database class for SQLite database """
     pass
+
+# Base Factory

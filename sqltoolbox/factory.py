@@ -1,14 +1,18 @@
 """ Database factory module """
-from database.database import DeclarativeDatabase, AutoMappedDatabase, DeclarativeLiteDatabase, AutoMappedLiteDatabase
+import logging
+
+from sqltoolbox.database import DeclarativeDatabase, AutoMappedDatabase, DeclarativeLiteDatabase, AutoMappedLiteDatabase
 
 # Import Base schema for declarative database
-from database.models.base import Base
+from sqltoolbox.models.base import Base
 
 # Import models for declarative base population
-from database.models import *
+from sqltoolbox.models import *
 
 # Import settings for database connection
-from database.config import settings, BASE_DIR
+from sqltoolbox.config import settings
+
+logger = logging.getLogger('database')
 
 # Example of declarative database
 def get_declarative_database():

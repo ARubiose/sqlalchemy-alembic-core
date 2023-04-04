@@ -8,7 +8,7 @@ from sqlalchemy.orm import relationship
 from sqlalchemy.orm import mapped_column
 from sqlalchemy.orm import Mapped
 
-from database.models.base import Base
+from sqltoolbox.models.base import Base
 
 if TYPE_CHECKING:
     from .user import User

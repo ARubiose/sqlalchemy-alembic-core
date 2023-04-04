@@ -2,10 +2,14 @@
 
 Core classes for building declarative and automapped databases
 """
+import logging.config
 from pathlib import Path
 from pydantic import BaseSettings
 
-BASE_DIR = Path(__file__).parents[2].resolve()
+BASE_DIR = Path(__file__).parents[1].resolve()
+
+# Load Logging config
+logging.config.fileConfig(BASE_DIR / 'config'/'logging.ini')
 
 class LiteDatabaseSettings(BaseSettings):
     """Database settings for database connection"""

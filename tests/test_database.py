@@ -6,7 +6,7 @@ import sqlalchemy
 from sqlalchemy import Column, Integer, String
 from sqlalchemy.orm import declarative_base
 
-from database.database import DeclarativeLiteDatabase, AutoMappedLiteDatabase, DeclarativeDatabase, AutoMappedDatabase
+from sqltoolbox.database import DeclarativeLiteDatabase, AutoMappedLiteDatabase, DeclarativeDatabase, AutoMappedDatabase
 
 DB_DIR = Path(__file__).parent / "database"
 
