@@ -27,7 +27,7 @@ def get_declarative_lite_database():
     return DeclarativeLiteDatabase(
         dialect='sqlite',
         driver='pysqlite',
-        name= 'database.db',
+        name= 'data/database.db',
         Base=Base,
         create_tables=True,
     )
@@ -37,5 +37,5 @@ def get_automapped_lite_database():
     return AutoMappedLiteDatabase(
         dialect='sqlite',
         driver='pysqlite',
-        name= 'database.db',
+        name= 'data/database.db',
     )

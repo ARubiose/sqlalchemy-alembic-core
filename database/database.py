@@ -232,8 +232,8 @@ class AutoMappedDatabaseBase(DatabaseBase, abc.ABC):
     """ Automapped base abstract class for automapped Base"""
 
     def __post_init__(self):
-        super().__post_init__()
         self._base_preparation()
+        super().__post_init__()
 
     def _base_preparation(self):
         """ Method for preparing the automapped base reflecting the database schema """

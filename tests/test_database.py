@@ -27,8 +27,9 @@ def declarative_lite_db_connection( base : typing.Any ):
     return DeclarativeLiteDatabase(
         dialect = "sqlite",
         driver  = "pysqlite",
-        name    = DB_DIR / "test_db.db",
+        name    = "data/test.db",
         Base    = base,
+        create_tables=True,
     )
 
 @pytest.fixture
@@ -49,7 +50,7 @@ def automapped_lite_db_connection( ):
     return AutoMappedLiteDatabase(
         dialect = "sqlite",
         driver  = "pysqlite",
-        name    = DB_DIR / "test_db.db",
+        name    = "data/test.db",
     )
 
 @pytest.fixture
